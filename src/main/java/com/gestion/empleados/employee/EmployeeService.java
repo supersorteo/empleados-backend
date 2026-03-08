@@ -12,6 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.gestion.empleados.adjustment.ManualAdjustmentRepository;
+import com.gestion.empleados.attendance.AttendanceRecordRepository;
+import com.gestion.empleados.attendance.QrTokenRepository;
+import com.gestion.empleados.audit.AuditLogRepository;
 import com.gestion.empleados.audit.AuditService;
 import com.gestion.empleados.common.ApiException;
 import com.gestion.empleados.common.Role;
@@ -21,12 +25,28 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final QrTokenRepository qrTokenRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
+    private final ManualAdjustmentRepository manualAdjustmentRepository;
+    private final AuditLogRepository auditLogRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public EmployeeService(EmployeeRepository employeeRepository, PasswordEncoder passwordEncoder, AuditService auditService) {
+    public EmployeeService(
+        EmployeeRepository employeeRepository,
+        PasswordEncoder passwordEncoder,
+        AuditService auditService,
+        QrTokenRepository qrTokenRepository,
+        AttendanceRecordRepository attendanceRecordRepository,
+        ManualAdjustmentRepository manualAdjustmentRepository,
+        AuditLogRepository auditLogRepository
+    ) {
         this.employeeRepository = employeeRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.qrTokenRepository = qrTokenRepository;
+        this.attendanceRecordRepository = attendanceRecordRepository;
+        this.manualAdjustmentRepository = manualAdjustmentRepository;
+        this.auditLogRepository = auditLogRepository;
     }
 
     public EmployeeResponse createEmployee(CreateEmployeeRequest request, Long actorId) {
@@ -74,8 +94,11 @@ public class EmployeeService {
     }
 
     @Transactional(readOnly = true)
-    public Page<EmployeeResponse> listEmployees(Pageable pageable) {
-        return employeeRepository.findAllByOrderByIdDesc(pageable).map(EmployeeResponse::new);
+    public Page<EmployeeResponse> listEmployees(Pageable pageable, Long actorId) {
+        // return employeeRepository.findAllByOrderByIdDesc(pageable).map(EmployeeResponse::new);
+        // return employeeRepository.findByActiveTrueOrderByIdDesc(pageable).map(EmployeeResponse::new);
+        return employeeRepository.findByCreatedByAdminIdAndActiveTrueOrderByIdDesc(actorId, pageable)
+            .map(EmployeeResponse::new);
     }
 
     @Transactional(readOnly = true)
@@ -119,17 +142,64 @@ public class EmployeeService {
         return new EmployeeResponse(saved);
     }
 
-    @Transactional
+    /*  @Transactional
     public void deleteEmployee(Long employeeId, Long actorId) {
         Employee employee = findById(employeeId);
-        employee.setActive(false);
-        employeeRepository.save(employee);
+        boolean hardDeleted = false;
+        // employee.setActive(false);
+        // employeeRepository.save(employee);
+        try {
+            employeeRepository.delete(employee);
+            hardDeleted = true;
+        } catch (DataIntegrityViolationException ex) {
+            // throw new ApiException(HttpStatus.CONFLICT, "No se puede eliminar: el empleado tiene registros relacionados");
+            employee.setActive(false);
+            employeeRepository.save(employee);
+        }
 
         if (actorId != null) {
             Employee actor = findById(actorId);
-            auditService.log(actor, "EMPLOYEE_DELETED", "Employee", employee.getId().toString(), "soft_delete=true");
+            // auditService.log(actor, "EMPLOYEE_DELETED", "Employee", employee.getId().toString(), "soft_delete=true");
+            auditService.log(
+                actor,
+                "EMPLOYEE_DELETED",
+                "Employee",
+                employee.getId().toString(),
+                hardDeleted ? "hard_delete=true" : "soft_delete=true"
+            );
+        }
+    }*/
+
+    @Transactional
+    public void deleteEmployee(Long employeeId, Long actorId, boolean forceDelete) {
+        Employee employee = findById(employeeId);
+
+        long qrTokens = qrTokenRepository.countByEmployee_Id(employeeId);
+        long attendanceRecords = attendanceRecordRepository.countByEmployee_Id(employeeId);
+        long adjustments = manualAdjustmentRepository.countByEmployee_IdOrRequestedBy_IdOrReviewer_Id(employeeId, employeeId, employeeId);
+        long auditLogs = auditLogRepository.countByActor_Id(employeeId);
+        boolean hasRelatedData = (qrTokens + attendanceRecords + adjustments + auditLogs) > 0;
+
+        if (hasRelatedData && !forceDelete) {
+            throw new ApiException(
+                HttpStatus.CONFLICT,
+                "El empleado tiene datos relacionados. Confirma eliminacion forzada para borrar todo su historial."
+            );
+        }
+
+        // employee.setActive(false);
+        // employeeRepository.save(employee);
+        employeeRepository.delete(employee);
+
+        if (actorId != null) {
+            Employee actor = findById(actorId);
+            String details = hasRelatedData
+                ? "hard_delete=true, cascade=true, related_data_deleted=true"
+                : "hard_delete=true, cascade=true, related_data_deleted=false";
+            auditService.log(actor, "EMPLOYEE_DELETED", "Employee", employee.getId().toString(), details);
         }
     }
+
 
     public EmployeeResponse setActive(Long employeeId, boolean active, Long actorId) {
         Employee employee = employeeRepository.findById(employeeId)

@@ -15,6 +15,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     boolean existsByUsername(String username);
     boolean existsByUsernameAndIdNot(String username, Long id);
     Page<Employee> findAllByOrderByIdDesc(Pageable pageable);
+    Page<Employee> findByActiveTrueOrderByIdDesc(Pageable pageable);
+    Page<Employee> findByCreatedByAdminIdAndActiveTrueOrderByIdDesc(Long createdByAdminId, Pageable pageable);
 
     Optional<Employee> findByEmailIgnoreCase(String email);
 

@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.gestion.empleados.employee.Employee;
 
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
+    long countByEmployee_Id(Long employeeId);
+
     Optional<AttendanceRecord> findTopByEmployeeOrderByEventTimeDesc(Employee employee);
     Optional<AttendanceRecord> findTopByEmployeeAndEventTimeBetweenOrderByEventTimeDesc(Employee employee, Instant from, Instant to);
     List<AttendanceRecord> findByEventTimeBetweenOrderByEventTimeDesc(Instant from, Instant to);

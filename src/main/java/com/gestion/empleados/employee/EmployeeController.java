@@ -43,11 +43,13 @@ public class EmployeeController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Page<EmployeeResponse> list(
+        Authentication authentication,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
+        AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
         Pageable pageable = PageRequest.of(page, size);
-        return employeeService.listEmployees(pageable);
+        return employeeService.listEmployees(pageable, principal.getEmployeeId());
     }
 
     @GetMapping("/{employeeId}")
@@ -76,9 +78,13 @@ public class EmployeeController {
 
     @DeleteMapping("/{employeeId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Object> delete(Authentication authentication, @PathVariable Long employeeId) {
+    public Map<String, Object> delete(
+        Authentication authentication,
+        @PathVariable Long employeeId,
+        @RequestParam(defaultValue = "false") boolean force
+    ) {
         AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
-        employeeService.deleteEmployee(employeeId, principal.getEmployeeId());
+        employeeService.deleteEmployee(employeeId, principal.getEmployeeId(), force);
         return Map.of("ok", true);
     }
 

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.gestion.empleados.employee.Employee;
 
 public interface ManualAdjustmentRepository extends JpaRepository<ManualAdjustmentRequest, Long> {
+    long countByEmployee_IdOrRequestedBy_IdOrReviewer_Id(Long employeeId, Long requestedById, Long reviewerId);
+
     List<ManualAdjustmentRequest> findByStatusOrderByCreatedAtDesc(AdjustmentStatus status);
     List<ManualAdjustmentRequest> findByEmployeeOrderByCreatedAtDesc(Employee employee);
     List<ManualAdjustmentRequest> findByEmployeeAndStatusOrderByCreatedAtDesc(Employee employee, AdjustmentStatus status);
