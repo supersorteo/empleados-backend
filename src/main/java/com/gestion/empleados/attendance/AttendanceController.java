@@ -66,27 +66,34 @@ public class AttendanceController {
         if (!rateLimiterService.allowScan(key)) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Demasiados escaneos en poco tiempo");
         }
-        return attendanceService.scan(request);
+        // return attendanceService.scan(request);
+        return attendanceService.scan(request, principal.getEmployeeId(), principal.getRole());
     }
 
     @GetMapping("/attendance")
     @PreAuthorize("hasRole('ADMIN')")
     public List<AttendanceRecordResponse> list(
+        Authentication authentication,
         @RequestParam(required = false) Long employeeId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to
     ) {
-        return attendanceService.listRecords(from, to, employeeId);
+        AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
+        // return attendanceService.listRecords(from, to, employeeId);
+        return attendanceService.listRecords(from, to, employeeId, principal.getEmployeeId());
     }
 
     @GetMapping(value = "/attendance/export.csv", produces = "text/csv")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> exportCsv(
+        Authentication authentication,
         @RequestParam(required = false) Long employeeId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to
     ) {
-        String csv = attendanceService.exportCsv(from, to, employeeId);
+        AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
+        // String csv = attendanceService.exportCsv(from, to, employeeId);
+        String csv = attendanceService.exportCsv(from, to, employeeId, principal.getEmployeeId());
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=attendance.csv")
             .contentType(MediaType.parseMediaType("text/csv"))

@@ -11,6 +11,7 @@ D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\auth\Chan
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\common\GlobalExceptionHandler.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\EmpleadosBackendApplication.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\adjustment\ReviewAdjustmentRequest.java
+D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\config\SetupController.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\attendance\QrTokenResponse.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\audit\AuditService.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\attendance\ScanResponse.java
@@ -33,6 +34,7 @@ D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\PublicEmployeeController.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\Employee.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\audit\AuditLogResponse.java
+D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\config\SetupStatusResponse.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\config\SecurityConfig.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\MeResponse.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\adjustment\ManualAdjustmentRepository.java
@@ -43,6 +45,7 @@ D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\audit\Aud
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\adjustment\AdjustmentStatus.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\UpdateEmployeeRequest.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\attendance\AttendanceRecord.java
+D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\config\SetupService.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\EmployeeRepository.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\auth\ForgotPasswordRequest.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\attendance\CreateQrTokenRequest.java
@@ -54,6 +57,7 @@ D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\attendanc
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\attendance\AttendanceRecordRepository.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\EmployeeController.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\audit\AuditLogRepository.java
+D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\config\BootstrapAdminRequest.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\security\JwtService.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\adjustment\AdjustmentService.java
 D:\DANILO\GESTORQR\backend\backend\src\main\java\com\gestion\empleados\employee\EmployeeResponse.java

@@ -17,23 +17,39 @@ public class DataInitializer {
 
     @Value("${APP_ADMIN_PASSWORD:Admin123*}")
     private String adminPassword;
+    @Value("${app.setup.seed-default-admin:false}")
+    private boolean seedDefaultAdmin;
 
     @Bean
     CommandLineRunner seedData(EmployeeRepository employeeRepository, ControlPointRepository controlPointRepository,
                                PasswordEncoder passwordEncoder) {
         return args -> {
-            if (employeeRepository.count() == 0) {
+            // if (employeeRepository.count() == 0) {
+            //     Employee admin = new Employee();
+            //     admin.setFullName("Administrador General");
+            //     admin.setUsername("admin");
+            //     admin.setEmail("admin@empresa.com");
+            //    // admin.setPasswordHash(passwordEncoder.encode("Admin123*"));
+            //     admin.setPasswordHash(passwordEncoder.encode(adminPassword));
+            //
+            //     admin.setRole(Role.ADMIN);
+            //     admin.setEmployeeCode("admin-root");
+            //     admin.setForcePasswordChange(false);
+            //     employeeRepository.save(admin);
+            // }
+
+            if (seedDefaultAdmin && employeeRepository.count() == 0) {
                 Employee admin = new Employee();
                 admin.setFullName("Administrador General");
                 admin.setUsername("admin");
                 admin.setEmail("admin@empresa.com");
-               // admin.setPasswordHash(passwordEncoder.encode("Admin123*"));
                 admin.setPasswordHash(passwordEncoder.encode(adminPassword));
-
                 admin.setRole(Role.ADMIN);
                 admin.setEmployeeCode("admin-root");
                 admin.setForcePasswordChange(false);
-                employeeRepository.save(admin);
+                Employee saved = employeeRepository.save(admin);
+                saved.setCreatedByAdminId(saved.getId());
+                employeeRepository.save(saved);
             }
 
             if (controlPointRepository.count() == 0) {

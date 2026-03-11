@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.gestion.empleados.audit.AuditService;
 import com.gestion.empleados.common.ApiException;
 import com.gestion.empleados.common.EventType;
+import com.gestion.empleados.common.Role;
 import com.gestion.empleados.controlpoint.ControlPoint;
 import com.gestion.empleados.controlpoint.ControlPointRepository;
 import com.gestion.empleados.employee.Employee;
@@ -81,8 +82,8 @@ public class AttendanceService {
         return new QrTokenResponse(token.getTokenId(), token.getExpiresAt(), eventType.name());
     }
 
-    @Transactional
-    public ScanResponse scan(ScanRequest request) {
+    // @Transactional
+    /*public ScanResponse scan(ScanRequest request) {
         Instant now = Instant.now();
         QrToken token = qrTokenRepository.findById(request.getToken())
             .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Token invalido"));
@@ -133,10 +134,71 @@ public class AttendanceService {
             status = "EXCESO_PAUSA";
         }
         return new ScanResponse(true, status, employee.getFullName(), eventType.name(), now, record.getId());
+    }*/
+
+    @Transactional
+    public ScanResponse scan(ScanRequest request, Long actorEmployeeId, Role actorRole) {
+        Instant now = Instant.now();
+        QrToken token = qrTokenRepository.findById(request.getToken())
+            .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Token invalido"));
+
+        if (token.getUsedAt() != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Token ya usado");
+        }
+        if (token.getExpiresAt().isBefore(now)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Token vencido");
+        }
+
+        Employee employee = token.getEmployee();
+        if (!employee.isActive()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Empleado desactivado");
+        }
+
+        Employee actor = employeeRepository.findById(actorEmployeeId)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
+        Long ownerAdminId = actorRole == Role.ADMIN ? actor.getId() : actor.getCreatedByAdminId();
+        if (ownerAdminId != null && !ownerAdminId.equals(employee.getCreatedByAdminId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No puedes registrar asistencia para empleados de otro administrador");
+        }
+
+        ControlPoint controlPoint = controlPointRepository.findById(request.getPuntoControlId())
+            .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Punto de control invalido"));
+        if (!controlPoint.isActive()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Punto de control inactivo");
+        }
+
+        EventType eventType = token.getRequestedEventType();
+        List<EventType> allowed = computeAllowedEvents(employee);
+        if (!allowed.contains(eventType)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Evento no permitido por estado actual");
+        }
+        validateShiftWindow(employee, eventType, now);
+
+        AttendanceRecord record = new AttendanceRecord();
+        record.setEmployee(employee);
+        record.setControlPoint(controlPoint);
+        record.setEventType(eventType);
+        record.setEventTime(now);
+        record.setLate(isLate(employee, eventType, now));
+        record.setExcessPause(isExcessPause(employee, eventType, now));
+        record.setSource("QR_DINAMICO");
+        attendanceRecordRepository.save(record);
+
+        token.setUsedAt(now);
+        token.setControlPoint(controlPoint);
+        qrTokenRepository.save(token);
+        auditService.log(employee, "ATTENDANCE_RECORDED", "AttendanceRecord", record.getId().toString(),
+            "event=" + record.getEventType().name() + ",source=QR_DINAMICO");
+
+        String status = record.isLate() ? "TARDE" : "OK";
+        if (record.isExcessPause()) {
+            status = "EXCESO_PAUSA";
+        }
+        return new ScanResponse(true, status, employee.getFullName(), eventType.name(), now, record.getId());
     }
 
-    @Transactional(readOnly = true)
-    public List<AttendanceRecordResponse> listRecords(Instant from, Instant to, Long employeeId) {
+    // @Transactional(readOnly = true)
+    /*public List<AttendanceRecordResponse> listRecords(Instant from, Instant to, Long employeeId) {
         if (from == null || to == null) {
             LocalDate today = LocalDate.now();
             from = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
@@ -153,10 +215,35 @@ public class AttendanceService {
         }
 
         return records.stream().map(AttendanceRecordResponse::new).toList();
+    }*/
+
+    @Transactional(readOnly = true)
+    public List<AttendanceRecordResponse> listRecords(Instant from, Instant to, Long employeeId, Long adminId) {
+        if (from == null || to == null) {
+            LocalDate today = LocalDate.now();
+            from = today.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            to = today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        }
+
+        List<AttendanceRecord> records;
+        if (employeeId == null) {
+            records = attendanceRecordRepository.findByEmployee_CreatedByAdminIdAndEventTimeBetweenOrderByEventTimeDesc(adminId, from, to);
+        } else {
+            boolean belongsToAdmin = employeeRepository.existsByIdAndCreatedByAdminId(employeeId, adminId);
+            if (!belongsToAdmin) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "No puedes consultar asistencia de empleados de otro administrador");
+            }
+            Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+            records = attendanceRecordRepository.findByEmployeeAndEventTimeBetweenOrderByEventTimeDesc(employee, from, to);
+        }
+
+        return records.stream().map(AttendanceRecordResponse::new).toList();
     }
 
-    public String exportCsv(Instant from, Instant to, Long employeeId) {
-        List<AttendanceRecordResponse> rows = listRecords(from, to, employeeId);
+    public String exportCsv(Instant from, Instant to, Long employeeId, Long adminId) {
+        // List<AttendanceRecordResponse> rows = listRecords(from, to, employeeId);
+        List<AttendanceRecordResponse> rows = listRecords(from, to, employeeId, adminId);
         StringJoiner joiner = new StringJoiner("\n");
         joiner.add("id,employee_id,employee_name,control_point_id,control_point_name,event_type,event_time,late,excess_pause,source");
         for (AttendanceRecordResponse r : rows) {

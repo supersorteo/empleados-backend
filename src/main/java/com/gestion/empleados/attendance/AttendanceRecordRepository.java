@@ -10,6 +10,7 @@ import com.gestion.empleados.employee.Employee;
 
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
     long countByEmployee_Id(Long employeeId);
+    List<AttendanceRecord> findByEmployee_CreatedByAdminIdAndEventTimeBetweenOrderByEventTimeDesc(Long createdByAdminId, Instant from, Instant to);
 
     Optional<AttendanceRecord> findTopByEmployeeOrderByEventTimeDesc(Employee employee);
     Optional<AttendanceRecord> findTopByEmployeeAndEventTimeBetweenOrderByEventTimeDesc(Employee employee, Instant from, Instant to);

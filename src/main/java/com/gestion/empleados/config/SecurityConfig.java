@@ -47,7 +47,9 @@ public class SecurityConfig {
     "/actuator/health",
     "/api/auth/login",
     "/api/auth/forgot-password",
-    "/api/auth/reset-password"
+    "/api/auth/reset-password",
+    "/api/setup/status",
+    "/api/setup/bootstrap-admin"
 ).permitAll()
 
                 .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
