@@ -1,0 +1,25 @@
+# Maven
+/target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+hs_err_pid*
+
+# Env/secrets
+.env
+.env.*
+!.env.example
+
+# Local overrides
+src/main/resources/application-local.properties
+src/main/resources/application-dev-local.properties
+src/main/resources/application-prod-local.properties
